@@ -6,7 +6,7 @@
   "icons": {
     "64": "icons/icon.png"
   },
-  "permissions": ["<all_urls>", "bookmarks"],
+  "permissions": ["<all_urls>", "bookmarks", "theme"],
   "background": {
     "scripts": ["lib/jquery-3.5.1.min.js", "background_script.js"]
   },
@@ -14,10 +14,14 @@
     "default_icon": {
       "64": "icons/icon.png"
     },
-    "default_popup": "browserAction/index.html",
+    "default_popup": "browserAction/popup.html",
     "default_title": "FolgenFinder"
   },
   "options_ui": {
-    "page": "options/index.html"
+    "page": "options/options.html"
+  },
+  "sidebar_action": {
+    "default_title": "Theme integrated sidebar",
+    "default_panel": "sidebar/sidebar.html"
   }
 }
