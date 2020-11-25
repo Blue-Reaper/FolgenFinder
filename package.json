@@ -1,6 +1,7 @@
 {
   "scripts": {
     "run": "web-ext run -f=firefoxdeveloperedition --browser-console",
+    "build": "web-ext build -o",
     "episodes": "web-ext run -f=firefoxdeveloperedition --browser-console --start-url https://reaperscans.com/comics/140270-the-great-mage-returns-after-4000-years/1/58 --start-url https://reaperscans.com/comics/144840-max-level-returner/1/32 --start-url https://reaperscans.com/comics/748666-mercenary-enrollment/1/7"
   }
 }
