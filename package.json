@@ -1,0 +1,6 @@
+{
+  "scripts": {
+    "run": "web-ext run -f=firefoxdeveloperedition --browser-console"
+  }
+  // todo add new command to pre-open tabs (to bookmark urls)
+}
