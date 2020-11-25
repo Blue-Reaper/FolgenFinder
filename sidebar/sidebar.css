@@ -5,3 +5,12 @@
   padding: 1em;
   margin: 1em;
 }
+
+#newEpisodes,
+#newEpisodes a {
+  color: white !important;
+}
+
+.hidden {
+  display: none;
+}

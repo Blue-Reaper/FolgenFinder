@@ -1,19 +1,13 @@
 // Put all the javascript code here, that you want to execute in background.
 
-let listNewEpisodes = [];
-
-// Listen for messages from extensions_scripts
+// Listen for messages from other scripts
 browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  // console.log('trigger: ' + request.trigger);
-  if (request.trigger == 'checkBookmarks') {
+  if (request.reload != undefined && request.reload == 'start') {
     checkBookmarks();
   }
 });
 
 function checkBookmarks() {
-  // empty previous results
-  listNewEpisodes = [];
-
   return Promise.resolve()
     .then(() => getBookmarksFromRootFolder())
     .then((bookmarkItems) => {
@@ -25,6 +19,9 @@ function checkBookmarks() {
       $.each(bookmarkItems, (idx, bookmark) =>
         checkNewEpisode(getUrlNextEpisode(bookmark))
       );
+      browser.runtime.sendMessage({
+        reload: 'end',
+      });
     })
     .catch((err) => {
       if (err) {
@@ -36,45 +33,50 @@ function checkBookmarks() {
 
 function getBookmarksFromRootFolder() {
   //idea set folder name in settings and only default is "FolgenFinder"
-  return Promise.resolve()
-    .then(() => browser.bookmarks.search({ title: 'FolgenFinder' }))
-    .then((rootFolder) => {
-      if (rootFolder.length == 0) {
-        console.log('Default folder not found.');
-        // create default folder if not exists
-        return Promise.resolve()
-          .then(function () {
-            return browser.bookmarks.create({
-              title: 'FolgenFinder',
+  return (
+    Promise.resolve()
+      // .then(() => browser.bookmarks.search({ title: 'FolgenFinder' }))
+      .then(() => browser.bookmarks.search({ title: 'Am Lesen' }))
+      .then((rootFolder) => {
+        if (rootFolder.length == 0) {
+          console.log('Default folder not found.');
+          // create default folder if not exists
+          return Promise.resolve()
+            .then(function () {
+              return browser.bookmarks.create({
+                title: 'FolgenFinder',
+              });
+            })
+            .then(function (rootFolder) {
+              return rootFolder.id;
             });
-          })
-          .then(function (rootFolder) {
-            return rootFolder.id;
-          });
-      } else if (rootFolder.length > 1) {
-        //   ToDo add error handling
-        console.error(
-          'More than one folder "' + rootFolder[0].title + '" found.'
+        } else if (rootFolder.length > 1) {
+          //   ToDo add error handling
+          console.error(
+            'More than one folder "' + rootFolder[0].title + '" found.'
+          );
+        } else {
+          return rootFolder[0].id;
+        }
+      })
+      .then((rootId) => {
+        // console.log('rootId: ' + rootId);
+        return Promise.resolve().then(() =>
+          browser.bookmarks.getSubTree(rootId)
         );
-      } else {
-        return rootFolder[0].id;
-      }
-    })
-    .then((rootId) => {
-      // console.log('rootId: ' + rootId);
-      return Promise.resolve().then(() => browser.bookmarks.getSubTree(rootId));
-    })
-    .then((rootTree) => {
-      // rootTree[0] == rootFolder
-      return Promise.resolve(rootTree[0].children);
-    })
-    .catch((err) => {
-      if (err) {
-        console.error(err);
-      }
-      z;
-      return Promise.resolve();
-    });
+      })
+      .then((rootTree) => {
+        // rootTree[0] == rootFolder
+        return Promise.resolve(rootTree[0].children);
+      })
+      .catch((err) => {
+        if (err) {
+          console.error(err);
+        }
+        z;
+        return Promise.resolve();
+      })
+  );
 }
 
 function getUrlNextEpisode(bookmark) {
@@ -85,10 +87,16 @@ function getUrlNextEpisode(bookmark) {
   // counter to next episode
   switch (urlParts[2]) {
     case 'reaperscans.com':
+    case 'edelgardescans.com':
+    case 'leviatanscans.com':
+    case 'skscans.com':
       urlParts[6] = parseInt(urlParts[6]) + 1;
       break;
+    case 'lhtranslation.net':
+      // todo how to count here?
+      break;
     default:
-      // todo what do when website not known?
+      // todo what do when website is not known?
       console.log('The website ' + urlParts[2] + ' is yet not known.');
       break;
   }
@@ -134,6 +142,9 @@ async function checkNewEpisode(newUrl) {
       // some pages redirect if url doesn't exist
       if (xhr.responseURL == newUrl) {
         console.log('+++++++++++++ page exits ' + newUrl);
+        browser.runtime.sendMessage({
+          newEpisode: newUrl,
+        });
       } else {
         console.log('------------- page not exits ' + newUrl);
       }

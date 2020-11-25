@@ -6,15 +6,16 @@ Firefox Add-on to check for new episodes of bookmarked shows.
 
 ## Version 0.1.0
 
-implement basic features:
+implement minimum features:
 
 - [x] read specific folder "FolgenFinder" in bookmarks or create if not exists
 - [x] read bookmarks in folder
 - [x] detect new episodes for specific website
-- [ ] notify user of new episodes
+- [x] notify user of new episodes
 
 ## Later Versions
 
+- [ ] design sidebar
 - [ ] manage sub-folders in "FolgenFinder" like "Shows" and "Manga"
 - [ ] add current site to bookmark
 - [ ] enable user to add new sites (where in the url is the epsisode-count?)
