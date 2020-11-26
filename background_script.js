@@ -15,6 +15,13 @@ browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 });
 
+// till "add bookmark", "update bookmark" or some other funktion is added,
+// toggle sidebar with browser-action and don't show popup
+browser.browserAction.onClicked.addListener(() => {
+  browser.sidebarAction.toggle();
+  checkBookmarks();
+});
+
 checkRootFolder();
 
 // Onboarding and Upboarding
@@ -133,10 +140,23 @@ function getUrlNextEpisode(bookmark) {
       urlParts[6] = parseInt(urlParts[6]) + 1;
       break;
     case 'lhtranslation.net':
-      // todo how to count here?
+      // split name
+      let parts = urlParts[3].split('-');
+      // split further
+      let lastPart = parts[parts.length - 1].split('.');
+      // count +1
+      lastPart[0] = parseInt(lastPart[0]) + 1;
+      //join erverithing together
+      parts[parts.length - 1] = lastPart.join('.');
+      urlParts[3] = parts.join('-');
+      // todo the next pages do exist but are empty
+      // clear array to not get false positiv "new episodes"
+      urlParts = [];
       break;
     default:
       // todo what do when website is not known?
+      // clear array to not get false positiv "new episodes"
+      urlParts = [];
       console.log('The website ' + urlParts[2] + ' is yet not known.');
       break;
   }
