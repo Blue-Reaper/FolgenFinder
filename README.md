@@ -35,6 +35,7 @@ implement minimum features:
 
 ## Backlog
 
+- [ ] sidebar be able to sort (best would be newest, otherwise source)
 - [ ] manage sub-folders or labels in "FolgenFinder" like "Shows" and "Manga"
 - [ ] add current site to bookmark
 - [ ] update bookmark
@@ -42,3 +43,4 @@ implement minimum features:
 - [ ] frequently check for new episodes
 - [ ] show new episode count as batch in adress-bar (optional in setttings)
 - [ ] show broken links in bookmarks
+- [ ] be able to mark spezific bookmarks (ex. not very interesting) wich are not shown in sidebar (or at the bottom)
