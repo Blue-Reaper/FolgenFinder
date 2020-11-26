@@ -7,23 +7,26 @@ async function setInitialStyle() {
 }
 
 function setSidebarStyle(theme) {
-  if (theme.colors && theme.colors.frame) {
-    document.body.style.backgroundColor = theme.colors.frame;
-  } else {
-    document.body.style.backgroundColor = 'white';
+  if (theme.colors && theme.colors.sidebar) {
+    document.body.style.backgroundColor = theme.colors.sidebar;
   }
 
-  if (theme.colors && theme.colors.toolbar) {
-    myElement.style.backgroundColor = theme.colors.toolbar;
-  } else {
-    myElement.style.backgroundColor = '#ebebeb';
+  if (theme.colors && theme.colors.toolbar_field) {
+    let style = document.createElement('style');
+    style.setAttribute('type', 'text/css');
+    let css =
+      ':root { --sidebar-highlight: ' + theme.colors.toolbar_field + ';}';
+    style.appendChild(document.createTextNode(css));
+    document.head.append(style);
   }
 
-  if (theme.colors && theme.colors.toolbar_text) {
-    myElement.style.color = theme.colors.toolbar_text;
-  } else {
-    // myElement.style.color = 'black';
-    myElement.style.color = 'white';
+  if (theme.colors && theme.colors.toolbar_field_text) {
+    let style = document.createElement('style');
+    style.setAttribute('type', 'text/css');
+    let css =
+      ':root { --sidebar-text: ' + theme.colors.toolbar_field_text + ';}';
+    style.appendChild(document.createTextNode(css));
+    document.head.append(style);
   }
 }
 
@@ -40,23 +43,27 @@ browser.theme.onUpdated.addListener(async ({ theme, windowId }) => {
   }
 });
 
-let listNewEpisodes = '';
-
 // Listen for messages from other scripts
 browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  let showNewEpisodes = $('#newEpisodes');
   if (request.reload != undefined && request.reload == 'start') {
     // empty previous results
-    listNewEpisodes = '';
+    showNewEpisodes.empty();
   } else if (request.reload != undefined && request.reload == 'end') {
     // reload finished (except async) if no messages recieved, no new episodes
-    newEpisodes.classList.remove('hidden');
-    if (listNewEpisodes != '') {
-      newEpisodes.innerHTML = listNewEpisodes;
-    }
+    showNewEpisodes.removeClass('hidden');
   } else if (request.newEpisode != undefined) {
-    listNewEpisodes +=
-      '<a href="' + request.newEpisode + '" >' + request.newEpisode + '</a>';
-    newEpisodes.classList.remove('hidden');
-    newEpisodes.innerHTML = listNewEpisodes;
+    showNewEpisodes.append(
+      $(
+        '<a href="' +
+          request.newEpisode +
+          '"><div class="title">' +
+          request.newEpisode.split('/')[2] +
+          '</div><div>' +
+          request.newEpisode +
+          '</div> </div>'
+      )
+    );
+    showNewEpisodes.removeClass('hidden');
   }
 });

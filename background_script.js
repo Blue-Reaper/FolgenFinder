@@ -1,5 +1,13 @@
 // Put all the javascript code here, that you want to execute in background.
 
+// debug popup
+// browser.tabs.create({ url: 'browserAction/popup.html' });
+// debug sidebar
+// browser.tabs.create({ url: 'sidebar/sidebar.html' });
+
+//idea set folder name in settings and only default is "FolgenFinder"
+let titleRootFolder = 'FolgenFinder';
+
 // Listen for messages from other scripts
 browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.reload != undefined && request.reload == 'start') {
@@ -7,9 +15,38 @@ browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 });
 
+checkRootFolder();
+
+// Onboarding and Upboarding
+browser.runtime.onInstalled.addListener(async ({ reason, temporary }) => {
+  if (temporary) return; // skip during development
+  switch (reason) {
+    case 'install':
+      {
+        // const url = browser.runtime.getURL('views/installed.html');
+        // await browser.tabs.create({ url });
+        // or: await browser.windows.create({ url, type: "popup", height: 600, width: 600, });
+
+        // FIXME not called by install?
+        checkRootFolder();
+      }
+      break;
+    case 'update':
+      {
+        // const url = browser.runtime.getURL("views/updated.html");
+        // await browser.tabs.create({ url });
+        // or: await browser.windows.create({ url, type: "popup", height: 600, width: 600, });
+
+        console.log('update');
+      }
+      break;
+  }
+});
+
 function checkBookmarks() {
   return Promise.resolve()
-    .then(() => getBookmarksFromRootFolder())
+    .then(() => checkRootFolder())
+    .then((rootId) => getBookmarksFromRootFolder(rootId))
     .then((bookmarkItems) => {
       if (bookmarkItems == undefined || bookmarkItems.length == 0) {
         // no existiting bookmarks
@@ -31,52 +68,55 @@ function checkBookmarks() {
     });
 }
 
-function getBookmarksFromRootFolder() {
-  //idea set folder name in settings and only default is "FolgenFinder"
-  return (
-    Promise.resolve()
-      // .then(() => browser.bookmarks.search({ title: 'FolgenFinder' }))
-      .then(() => browser.bookmarks.search({ title: 'Am Lesen' }))
-      .then((rootFolder) => {
-        if (rootFolder.length == 0) {
-          console.log('Default folder not found.');
-          // create default folder if not exists
-          return Promise.resolve()
-            .then(function () {
-              return browser.bookmarks.create({
-                title: 'FolgenFinder',
-              });
-            })
-            .then(function (rootFolder) {
-              return rootFolder.id;
+function checkRootFolder() {
+  return Promise.resolve()
+    .then(() => browser.bookmarks.search({ title: titleRootFolder }))
+    .then((rootFolder) => {
+      if (rootFolder.length == 0) {
+        // console.log('Default folder not found.');
+        // create default folder if not exists
+        return Promise.resolve()
+          .then(function () {
+            return browser.bookmarks.create({
+              title: titleRootFolder,
             });
-        } else if (rootFolder.length > 1) {
-          //   ToDo add error handling
-          console.error(
-            'More than one folder "' + rootFolder[0].title + '" found.'
-          );
-        } else {
-          return rootFolder[0].id;
-        }
-      })
-      .then((rootId) => {
-        // console.log('rootId: ' + rootId);
-        return Promise.resolve().then(() =>
-          browser.bookmarks.getSubTree(rootId)
+          })
+          .then(function (rootFolder) {
+            return rootFolder.id;
+          });
+      } else if (rootFolder.length > 1) {
+        //   ToDo add error handling
+        console.error(
+          'More than one folder "' + rootFolder[0].title + '" found.'
         );
-      })
-      .then((rootTree) => {
-        // rootTree[0] == rootFolder
-        return Promise.resolve(rootTree[0].children);
-      })
-      .catch((err) => {
-        if (err) {
-          console.error(err);
-        }
-        z;
-        return Promise.resolve();
-      })
-  );
+      } else {
+        return rootFolder[0].id;
+      }
+    })
+    .catch((err) => {
+      if (err) {
+        console.error(err);
+      }
+      return Promise.resolve();
+    });
+}
+
+function getBookmarksFromRootFolder(rootId) {
+  return Promise.resolve()
+    .then(() => {
+      // console.log('rootId: ' + rootId);
+      return Promise.resolve().then(() => browser.bookmarks.getSubTree(rootId));
+    })
+    .then((rootTree) => {
+      // rootTree[0] == rootFolder
+      return Promise.resolve(rootTree[0].children);
+    })
+    .catch((err) => {
+      if (err) {
+        console.error(err);
+      }
+      return Promise.resolve();
+    });
 }
 
 function getUrlNextEpisode(bookmark) {

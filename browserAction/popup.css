@@ -1,15 +1,49 @@
-.button-icon {
-  background-color: rgba(12, 12, 13, 0.8);
-  height: 16px;
-  mask-size: 16px;
-  mask-position: center center;
-  mask-repeat: no-repeat;
+:root {
+  --ghostbutton-color: rgba(12, 12, 13, 0.8);
+  --ghostbutton-hover: rgba(12, 12, 13, 0.1);
+  --ghostbutton-active: rgba(12, 12, 13, 0.2);
 }
 
-#new-button > .button-icon {
+.float {
+  float: left;
+}
+
+.ghostbutton {
+  width: 32px;
+  height: 32px;
+  border-radius: 2px;
+  margin: 4px 2px;
+}
+
+.ghostbutton:hover {
+  background-color: var(--ghostbutton-hover);
+}
+
+.ghostbutton:active,
+.ghostbutton.active {
+  background-color: var(--ghostbutton-active);
+}
+
+.ghostbutton:disabled,
+.ghostbutton.disabled {
+  opacity: 40%;
+  background-color: transparent;
+}
+
+.ghostbutton i {
+  display: inline-block;
+  background-color: var(--ghostbutton-color);
+  height: 16px;
+  width: 16px;
+  margin: 8px;
+}
+
+.new.ghostbutton i {
   mask-image: url('/icons/new.svg');
 }
-
-.button:hover {
-  background-color: rgba(12, 12, 13, 0.1);
+.reload.ghostbutton i {
+  mask-image: url('/icons/sync.svg');
+}
+.sidebar.ghostbutton i {
+  mask-image: url('/icons/sidebarLeft.svg');
 }

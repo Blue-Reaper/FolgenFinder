@@ -1,14 +1,24 @@
-#myElement {
-  font: menu;
-  font-size: 1.5em;
-  font-weight: 500;
-  padding: 1em;
-  margin: 1em;
+:root {
+  --sidebar-text: black;
+  --sidebar-highlight: rgba(12, 12, 13, 0.2);
+  --sidebar-hover: rgba(12, 12, 13, 0.1);
 }
 
-#newEpisodes,
-#newEpisodes a {
-  color: white !important;
+.box a {
+  color: var(--sidebar-text);
+  background-color: var(--sidebar-highlight);
+  padding: 1em;
+  margin: 1em;
+  display: block;
+  text-decoration: none;
+}
+
+.box a:hover {
+  background-color: var(--sidebar-hover);
+}
+
+.title {
+  font-weight: bold;
 }
 
 .hidden {
