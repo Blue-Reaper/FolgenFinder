@@ -20,12 +20,11 @@ implement minimum features:
 - [x] design popup
 - [x] integrate popup in theme
 
-## next
+## version 0.2.1
 
-- [ ] by unknown domain set default "no new episode"
-- [ ] refresh sidebar on .open
-- [ ] till "add bookmark", "update bookmark" or some other funktion is added, open sidebar with browser-action and don't show popup
-- [ ] manage multibel foulders (tabs in sidebar + foldernames in options)
+- [x] by unknown domain set default "no new episode"
+- [x] refresh sidebar on .open
+- [x] till "add bookmark", "update bookmark" or some other funktion is added, toggle sidebar with browser-action and don't show popup
 
 ## needed for Version 1.0.0
 
@@ -35,6 +34,8 @@ implement minimum features:
 
 ## Backlog
 
+- [ ] refresh button in sidebar
+- [ ] manage multibel foulders (tabs in sidebar + foldernames in options)
 - [ ] sidebar be able to sort (best would be newest, otherwise source)
 - [ ] manage sub-folders or labels in "FolgenFinder" like "Shows" and "Manga"
 - [ ] add current site to bookmark
