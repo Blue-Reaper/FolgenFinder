@@ -43,6 +43,15 @@ browser.theme.onUpdated.addListener(async ({ theme, windowId }) => {
   }
 });
 
+// reload "new episodes" when sidebar opend
+reload();
+
+function reload() {
+  browser.runtime.sendMessage({
+    reload: 'start',
+  });
+}
+
 // Listen for messages from other scripts
 browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
   let showNewEpisodes = $('#newEpisodes');

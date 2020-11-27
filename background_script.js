@@ -19,7 +19,6 @@ browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
 // toggle sidebar with browser-action and don't show popup
 browser.browserAction.onClicked.addListener(() => {
   browser.sidebarAction.toggle();
-  checkBookmarks();
 });
 
 checkRootFolder();
