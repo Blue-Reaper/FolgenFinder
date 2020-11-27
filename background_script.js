@@ -49,6 +49,12 @@ browser.runtime.onInstalled.addListener(async ({ reason, temporary }) => {
   }
 });
 
+let bookmarkcount = 0;
+let loopcount = 0;
+let getNextEpisodecount = 0;
+let getNextEpisodecountError = 0;
+let checkEpisodecount = 0;
+
 function checkBookmarks() {
   return Promise.resolve()
     .then(() => checkRootFolder())
@@ -58,13 +64,22 @@ function checkBookmarks() {
         // no existiting bookmarks
         return Promise.resolve();
       }
-      // console.log('bookmark count: ' + bookmarkItems.length);
-      $.each(bookmarkItems, (idx, bookmark) =>
-        checkNewEpisode(getUrlNextEpisode(bookmark))
-      );
+      bookmarkcount = bookmarkItems.length;
+      loopcount = 0;
+      getNextEpisodecount = 0;
+      getNextEpisodecountError = 0;
+      checkEpisodecount = 0;
+      $.each(bookmarkItems, (idx, bookmark) => {
+        loopcount += 1;
+        checkNewEpisode(getUrlNextEpisode(bookmark));
+      });
       browser.runtime.sendMessage({
         reload: 'end',
       });
+      console.log('bookmarks' + bookmarkcount);
+      console.log('loops' + loopcount);
+      console.log('nextUrls' + getNextEpisodecount);
+      console.log('nextUrlsError' + getNextEpisodecountError);
     });
 }
 
@@ -121,7 +136,7 @@ function getBookmarksFromRootFolder(rootId) {
 
 function getUrlNextEpisode(bookmark) {
   let countRegex;
-  console.log('Domain: ' + /(?<=^(.*\/){2}).*?(?=\/)/.exec(bookmark.url)[0]);
+  // console.log('Domain: ' + /(?<=^(.*\/){2}).*?(?=\/)/.exec(bookmark.url)[0]);
   // find episode-count for domain
   switch (/(?<=^(.*\/){2}).*?(?=\/)/.exec(bookmark.url)[0]) {
     case 'reaperscans.com':
@@ -137,6 +152,8 @@ function getUrlNextEpisode(bookmark) {
       // todo the next pages do exist but are empty
       // use no regex to prevent false positiv "new episodes"
       // countRegex = /(?<=^(.*?\/){3}(.*?-)*)\d*(?=\.html)/;
+      getNextEpisodecountError += 1;
+      return 'unknownDomain';
       break;
     case 'mangasushi.net':
       countRegex = /(?<=^(.*?\/){5}chapter-)\d*(?=\/.*)/;
@@ -144,15 +161,18 @@ function getUrlNextEpisode(bookmark) {
     default:
       // todo what do when website is not known?
       console.log('The website ' + urlParts[2] + ' is yet not known.');
+      getNextEpisodecountError += 1;
+      return 'unknownDomain';
       break;
   }
 
-  console.log('original URL:' + bookmark.url);
+  // console.log('original URL:' + bookmark.url);
   let count = countRegex.exec(bookmark.url)[0];
-  console.log('Count: ' + count);
+  // console.log('Count: ' + count);
 
   let newUrl = bookmark.url.replace(countRegex, parseInt(count) + 1);
-  console.log('new url: ' + newUrl);
+  // console.log('new url: ' + newUrl);
+  getNextEpisodecount += 1;
   return newUrl;
 }
 
@@ -187,17 +207,39 @@ async function checkNewEpisode(newUrl) {
 
   xhr.onreadystatechange = function () {
     if (this.readyState == 4 && this.status == 200) {
-      console.log('new: ' + newUrl);
-      console.log('response: ' + xhr.responseURL);
+      // console.log('new: ' + newUrl);
+      // console.log('response: ' + xhr.responseURL);
       // some pages redirect if url doesn't exist
       if (xhr.responseURL == newUrl) {
-        console.log('+++++++++++++ page exits ' + newUrl);
+        checkEpisodecount += 1;
+        console.log(
+          checkEpisodecount +
+            '+++++++++++++ page exits new:' +
+            newUrl +
+            ' resoponse: ' +
+            xhr.responseURL
+        );
         browser.runtime.sendMessage({
           newEpisode: newUrl,
         });
       } else {
-        console.log('------------- page not exits ' + newUrl);
+        checkEpisodecount += 1;
+        console.log(
+          checkEpisodecount +
+            '------------- page not exits new:' +
+            newUrl +
+            ' resoponse: ' +
+            xhr.responseURL
+        );
       }
+    } else if (this.readyState == 4 && this.status == 404) {
+      checkEpisodecount += 1;
+      console.log(
+        checkEpisodecount +
+          '------------- page not exits new:' +
+          newUrl +
+          ' resoponse: 404'
+      );
     }
   };
 
