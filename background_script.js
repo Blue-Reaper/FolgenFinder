@@ -66,12 +66,6 @@ function checkBookmarks() {
       browser.runtime.sendMessage({
         reload: 'end',
       });
-    })
-    .catch((err) => {
-      if (err) {
-        console.error(err);
-      }
-      return Promise.resolve();
     });
 }
 
@@ -127,42 +121,39 @@ function getBookmarksFromRootFolder(rootId) {
 }
 
 function getUrlNextEpisode(bookmark) {
-  let urlParts = bookmark.url.split('/');
-  // console.log('urlSplit: ' + urlParts);
-  // console.log('urlDomain: ' + urlParts[2]);
-
-  // counter to next episode
-  switch (urlParts[2]) {
+  let countRegex;
+  console.log('Domain: ' + /(?<=^(.*\/){2}).*?(?=\/)/.exec(bookmark.url)[0]);
+  // find episode-count for domain
+  switch (/(?<=^(.*\/){2}).*?(?=\/)/.exec(bookmark.url)[0]) {
     case 'reaperscans.com':
+    // regex with named group see: https://github.com/tc39/proposal-regexp-named-groups
+    // let regex = /(?<=^(.*?\/){6})(?<count>\d+)/;
     case 'edelgardescans.com':
     case 'leviatanscans.com':
     case 'skscans.com':
-      urlParts[6] = parseInt(urlParts[6]) + 1;
+      // regex to find episode
+      countRegex = /(?<=^(.*?\/){6})\d+/;
       break;
     case 'lhtranslation.net':
-      // split name
-      let parts = urlParts[3].split('-');
-      // split further
-      let lastPart = parts[parts.length - 1].split('.');
-      // count +1
-      lastPart[0] = parseInt(lastPart[0]) + 1;
-      //join erverithing together
-      parts[parts.length - 1] = lastPart.join('.');
-      urlParts[3] = parts.join('-');
       // todo the next pages do exist but are empty
-      // clear array to not get false positiv "new episodes"
-      urlParts = [];
+      // use no regex to prevent false positiv "new episodes"
+      // countRegex = /(?<=^(.*?\/){3}(.*?-)*)\d*(?=\.html)/;
+      break;
+    case 'mangasushi.net':
+      countRegex = /(?<=^(.*?\/){5}chapter-)\d*(?=\/.*)/;
       break;
     default:
       // todo what do when website is not known?
-      // clear array to not get false positiv "new episodes"
-      urlParts = [];
       console.log('The website ' + urlParts[2] + ' is yet not known.');
       break;
   }
 
-  let newUrl = urlParts.join('/');
-  // console.log('new url: ' + newUrl);
+  console.log('original URL:' + bookmark.url);
+  let count = countRegex.exec(bookmark.url)[0];
+  console.log('Count: ' + count);
+
+  let newUrl = bookmark.url.replace(countRegex, parseInt(count) + 1);
+  console.log('new url: ' + newUrl);
   return newUrl;
 }
 
