@@ -2,11 +2,11 @@
   "manifest_version": 2,
   "name": "FolgenFinder",
   "description": "Always be up to date with your favourite show and be notified of new episodes.",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "icons": {
     "64": "icons/icon.png"
   },
-  "permissions": ["<all_urls>", "bookmarks", "theme"],
+  "permissions": ["<all_urls>", "bookmarks", "theme", "storage"],
   "background": {
     "scripts": ["lib/jquery.min.js", "background_script.js"]
   },
@@ -21,5 +21,10 @@
   "sidebar_action": {
     "default_title": "FolgenFinder - new episodes",
     "default_panel": "sidebar/sidebar.html"
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "folgenfinder@blue-reaper.github.io"
+    }
   }
 }

@@ -6,7 +6,17 @@
 // browser.tabs.create({ url: 'sidebar/sidebar.html' });
 
 //idea set folder name in settings and only default is "FolgenFinder"
-let titleRootFolder = 'FolgenFinder';
+let titleRootFolder = '';
+
+readOptions();
+browser.storage.onChanged.addListener(readOptions);
+function readOptions() {
+  let gettingActiveFolder = browser.storage.sync.get('activeFolder');
+  gettingActiveFolder.then((res) => {
+    titleRootFolder = res.activeFolder;
+    console.log('read options - folder: ' + res.activeFolder);
+  });
+}
 
 // Listen for messages from other scripts
 browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
@@ -21,7 +31,7 @@ browser.browserAction.onClicked.addListener(() => {
   browser.sidebarAction.toggle();
 });
 
-checkRootFolder();
+// checkRootFolder();
 
 // Onboarding and Upboarding
 browser.runtime.onInstalled.addListener(async ({ reason, temporary }) => {
@@ -49,11 +59,12 @@ browser.runtime.onInstalled.addListener(async ({ reason, temporary }) => {
   }
 });
 
-let bookmarkcount = 0;
-let loopcount = 0;
-let getNextEpisodecount = 0;
-let getNextEpisodecountError = 0;
-let checkEpisodecount = 0;
+let bookmarkCount = 0;
+let loopCount = 0;
+let getNextUrlCount = 0;
+let getNextUrlCountError = 0;
+let checkEpisodeCountNew = 0;
+let checkEpisodeCount = 0;
 
 function checkBookmarks() {
   return Promise.resolve()
@@ -64,22 +75,27 @@ function checkBookmarks() {
         // no existiting bookmarks
         return Promise.resolve();
       }
-      bookmarkcount = bookmarkItems.length;
-      loopcount = 0;
-      getNextEpisodecount = 0;
-      getNextEpisodecountError = 0;
-      checkEpisodecount = 0;
+      bookmarkCount = bookmarkItems.length;
+      loopCount = 0;
+      getNextUrlCount = 0;
+      getNextUrlCountError = 0;
+      checkEpisodeCountNew = 0;
+      checkEpisodeCount = 0;
       $.each(bookmarkItems, (idx, bookmark) => {
-        loopcount += 1;
+        loopCount += 1;
         checkNewEpisode(getUrlNextEpisode(bookmark));
       });
       browser.runtime.sendMessage({
         reload: 'end',
+        bookmarkCount: bookmarkCount,
+        loopCount: loopCount,
+        getNextUrlCount: getNextUrlCount,
+        getNextUrlCountError: getNextUrlCountError,
       });
-      console.log('bookmarks' + bookmarkcount);
-      console.log('loops' + loopcount);
-      console.log('nextUrls' + getNextEpisodecount);
-      console.log('nextUrlsError' + getNextEpisodecountError);
+      console.log('bookmarks' + bookmarkCount);
+      console.log('loops' + loopCount);
+      console.log('nextUrls' + getNextUrlCount);
+      console.log('nextUrlsError' + getNextUrlCountError);
     });
 }
 
@@ -89,6 +105,7 @@ function checkRootFolder() {
     .then((rootFolder) => {
       if (rootFolder.length == 0) {
         // console.log('Default folder not found.');
+        // todo folder should exists, create folder in options after asking user
         // create default folder if not exists
         return Promise.resolve()
           .then(function () {
@@ -107,12 +124,6 @@ function checkRootFolder() {
       } else {
         return rootFolder[0].id;
       }
-    })
-    .catch((err) => {
-      if (err) {
-        console.error(err);
-      }
-      return Promise.resolve();
     });
 }
 
@@ -125,12 +136,6 @@ function getBookmarksFromRootFolder(rootId) {
     .then((rootTree) => {
       // rootTree[0] == rootFolder
       return Promise.resolve(rootTree[0].children);
-    })
-    .catch((err) => {
-      if (err) {
-        console.error(err);
-      }
-      return Promise.resolve();
     });
 }
 
@@ -150,18 +155,24 @@ function getUrlNextEpisode(bookmark) {
       break;
     case 'lhtranslation.net':
       // todo the next pages do exist but are empty
-      // use no regex to prevent false positiv "new episodes"
-      // countRegex = /(?<=^(.*?\/){3}(.*?-)*)\d*(?=\.html)/;
-      getNextEpisodecountError += 1;
+      countRegex = /(?<=^(.*?\/){3}(.*?-)*)\d*(?=\.html)/;
+      getNextUrlCountError += 1;
       return 'unknownDomain';
       break;
     case 'mangasushi.net':
+      // todo one false "new episode"
       countRegex = /(?<=^(.*?\/){5}chapter-)\d*(?=\/.*)/;
+      getNextUrlCountError += 1;
+      return 'unknownDomain';
       break;
     default:
       // todo what do when website is not known?
-      console.log('The website ' + urlParts[2] + ' is yet not known.');
-      getNextEpisodecountError += 1;
+      console.log(
+        'The website ' +
+          /(?<=^(.*\/){2}).*?(?=\/)/.exec(bookmark.url)[0] +
+          ' is yet not known.'
+      );
+      getNextUrlCountError += 1;
       return 'unknownDomain';
       break;
   }
@@ -172,7 +183,7 @@ function getUrlNextEpisode(bookmark) {
 
   let newUrl = bookmark.url.replace(countRegex, parseInt(count) + 1);
   // console.log('new url: ' + newUrl);
-  getNextEpisodecount += 1;
+  getNextUrlCount += 1;
   return newUrl;
 }
 
@@ -211,10 +222,9 @@ async function checkNewEpisode(newUrl) {
       // console.log('response: ' + xhr.responseURL);
       // some pages redirect if url doesn't exist
       if (xhr.responseURL == newUrl) {
-        checkEpisodecount += 1;
+        checkEpisodeCountNew += 1;
         console.log(
-          checkEpisodecount +
-            '+++++++++++++ page exits new:' +
+          '+++++++++++++ page exits new:' +
             newUrl +
             ' resoponse: ' +
             xhr.responseURL
@@ -223,24 +233,24 @@ async function checkNewEpisode(newUrl) {
           newEpisode: newUrl,
         });
       } else {
-        checkEpisodecount += 1;
+        checkEpisodeCount += 1;
         console.log(
-          checkEpisodecount +
-            '------------- page not exits new:' +
+          '------------- page not exits new:' +
             newUrl +
             ' resoponse: ' +
             xhr.responseURL
         );
       }
     } else if (this.readyState == 4 && this.status == 404) {
-      checkEpisodecount += 1;
+      checkEpisodeCount += 1;
       console.log(
-        checkEpisodecount +
-          '------------- page not exits new:' +
-          newUrl +
-          ' resoponse: 404'
+        '------------- page not exits new:' + newUrl + ' resoponse: 404'
       );
     }
+    browser.runtime.sendMessage({
+      checkEpisodeCountNew: checkEpisodeCountNew,
+      checkEpisodeCount: checkEpisodeCount,
+    });
   };
 
   xhr.send();

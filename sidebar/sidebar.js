@@ -47,20 +47,71 @@ browser.theme.onUpdated.addListener(async ({ theme, windowId }) => {
 reload();
 
 function reload() {
+  $('#newEpisodes').empty();
+  $('.count').empty();
   browser.runtime.sendMessage({
     reload: 'start',
+  });
+}
+
+readOptions();
+browser.storage.onChanged.addListener(readOptions);
+function readOptions() {
+  let gettingItem = browser.storage.sync.get('folder');
+  gettingItem.then((res) => {
+    $('#folder1')
+      .text(res.folder[0])
+      .click(() => {
+        browser.storage.sync.set({
+          activeFolder: res.folder[0],
+        });
+        reload();
+      });
+    $('#folder2')
+      .text(res.folder[1])
+      .click(() => {
+        browser.storage.sync.set({
+          activeFolder: res.folder[1],
+        });
+        reload();
+      });
+    $('#folder3')
+      .text(res.folder[2])
+      .click(() => {
+        browser.storage.sync.set({
+          activeFolder: res.folder[2],
+        });
+        reload();
+      });
   });
 }
 
 // Listen for messages from other scripts
 browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
   let showNewEpisodes = $('#newEpisodes');
-  if (request.reload != undefined && request.reload == 'start') {
-    // empty previous results
-    showNewEpisodes.empty();
-  } else if (request.reload != undefined && request.reload == 'end') {
+  if (request.reload != undefined && request.reload == 'end') {
     // reload finished (except async) if no messages recieved, no new episodes
     showNewEpisodes.removeClass('hidden');
+    console.log('read counts');
+    $('#counts').append(
+      $('<div>bookmarks: ' + request.bookmarkCount + '</div>')
+    );
+    if (request.bookmarkCount != request.loopCount) {
+      $('#counts').append(
+        $('<div>!!to little loops: ' + request.loopCount + '</div>')
+      );
+    }
+    $('#counts').append(
+      $(
+        '<div>nextUrl: ' +
+          request.getNextUrlCount +
+          ' unknown Domain: ' +
+          request.getNextUrlCountError +
+          ' = ' +
+          (request.getNextUrlCount + request.getNextUrlCountError) +
+          '</div>'
+      )
+    );
   } else if (request.newEpisode != undefined) {
     showNewEpisodes.append(
       $(
@@ -74,5 +125,18 @@ browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
       )
     );
     showNewEpisodes.removeClass('hidden');
+  } else if (request.checkEpisodeCount != undefined) {
+    $('#checked').empty();
+    $('#checked').append(
+      $(
+        '<div>New Episodes: ' +
+          request.checkEpisodeCountNew +
+          ' old: ' +
+          request.checkEpisodeCount +
+          ' = ' +
+          (request.checkEpisodeCountNew + request.checkEpisodeCount) +
+          '</div>'
+      )
+    );
   }
 });

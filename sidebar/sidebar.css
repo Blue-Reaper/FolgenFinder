@@ -24,3 +24,19 @@
 .hidden {
   display: none;
 }
+
+.count {
+  color: var(--sidebar-text);
+  text-decoration: none;
+}
+
+.button {
+  cursor: pointer;
+  display: block;
+  height: 1em;
+  width: 2em;
+  background-color: var(--sidebar-highlight);
+  float: left;
+  margin: 8px;
+  padding: 8px;
+}
