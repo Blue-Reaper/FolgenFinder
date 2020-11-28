@@ -118,9 +118,7 @@ function checkRootFolder() {
           });
       } else if (rootFolder.length > 1) {
         //   ToDo add error handling
-        console.error(
-          'More than one folder "' + rootFolder[0].title + '" found.'
-        );
+        console.error('More than one folder "' + rootFolder[0].title + '" found.');
       } else {
         return rootFolder[0].id;
       }
@@ -143,7 +141,9 @@ function getUrlNextEpisode(bookmark) {
   let countRegex;
   // console.log('Domain: ' + /(?<=^(.*\/){2}).*?(?=\/)/.exec(bookmark.url)[0]);
   // find episode-count for domain
-  switch (/(?<=^(.*\/){2}).*?(?=\/)/.exec(bookmark.url)[0]) {
+  // todo change regex for domain (no www. ww2. or .com .yiu)
+  let domain = /(?<=^(.*\/){2}).*?(?=\/)/.exec(bookmark.url)[0];
+  switch (domain) {
     case 'reaperscans.com':
     // regex with named group see: https://github.com/tc39/proposal-regexp-named-groups
     // let regex = /(?<=^(.*?\/){6})(?<count>\d+)/;
@@ -167,11 +167,7 @@ function getUrlNextEpisode(bookmark) {
       break;
     default:
       // todo what do when website is not known?
-      console.log(
-        'The website ' +
-          /(?<=^(.*\/){2}).*?(?=\/)/.exec(bookmark.url)[0] +
-          ' is yet not known.'
-      );
+      console.log('The website ' + domain + ' is yet not known.');
       getNextUrlCountError += 1;
       return 'unknownDomain';
       break;
@@ -223,29 +219,19 @@ async function checkNewEpisode(newUrl) {
       // some pages redirect if url doesn't exist
       if (xhr.responseURL == newUrl) {
         checkEpisodeCountNew += 1;
-        console.log(
-          '+++++++++++++ page exits new:' +
-            newUrl +
-            ' resoponse: ' +
-            xhr.responseURL
-        );
+        console.log('+++++++++++++ page exits new:' + newUrl + ' resoponse: ' + xhr.responseURL);
         browser.runtime.sendMessage({
           newEpisode: newUrl,
         });
       } else {
         checkEpisodeCount += 1;
         console.log(
-          '------------- page not exits new:' +
-            newUrl +
-            ' resoponse: ' +
-            xhr.responseURL
+          '------------- page not exits new:' + newUrl + ' resoponse: ' + xhr.responseURL
         );
       }
     } else if (this.readyState == 4 && this.status == 404) {
       checkEpisodeCount += 1;
-      console.log(
-        '------------- page not exits new:' + newUrl + ' resoponse: 404'
-      );
+      console.log('------------- page not exits new:' + newUrl + ' resoponse: 404');
     }
     browser.runtime.sendMessage({
       checkEpisodeCountNew: checkEpisodeCountNew,

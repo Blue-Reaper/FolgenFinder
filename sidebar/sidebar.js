@@ -14,8 +14,7 @@ function setSidebarStyle(theme) {
   if (theme.colors && theme.colors.toolbar_field) {
     let style = document.createElement('style');
     style.setAttribute('type', 'text/css');
-    let css =
-      ':root { --sidebar-highlight: ' + theme.colors.toolbar_field + ';}';
+    let css = ':root { --sidebar-highlight: ' + theme.colors.toolbar_field + ';}';
     style.appendChild(document.createTextNode(css));
     document.head.append(style);
   }
@@ -23,8 +22,7 @@ function setSidebarStyle(theme) {
   if (theme.colors && theme.colors.toolbar_field_text) {
     let style = document.createElement('style');
     style.setAttribute('type', 'text/css');
-    let css =
-      ':root { --sidebar-text: ' + theme.colors.toolbar_field_text + ';}';
+    let css = ':root { --sidebar-text: ' + theme.colors.toolbar_field_text + ';}';
     style.appendChild(document.createTextNode(css));
     document.head.append(style);
   }
@@ -93,13 +91,9 @@ browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
     // reload finished (except async) if no messages recieved, no new episodes
     showNewEpisodes.removeClass('hidden');
     console.log('read counts');
-    $('#counts').append(
-      $('<div>bookmarks: ' + request.bookmarkCount + '</div>')
-    );
+    $('#counts').append($('<div>bookmarks: ' + request.bookmarkCount + '</div>'));
     if (request.bookmarkCount != request.loopCount) {
-      $('#counts').append(
-        $('<div>!!to little loops: ' + request.loopCount + '</div>')
-      );
+      $('#counts').append($('<div>!!to little loops: ' + request.loopCount + '</div>'));
     }
     $('#counts').append(
       $(
