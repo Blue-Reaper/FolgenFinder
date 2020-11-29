@@ -1,7 +1,8 @@
 {
   "scripts": {
-    "run": "web-ext run -f=firefoxdeveloperedition",
     "debug": "web-ext run -f=firefoxdeveloperedition --browser-console",
+    "lint": "web-ext lint",
+    "run": "web-ext run -f=firefoxdeveloperedition",
     "build": "web-ext build -o"
   }
 }

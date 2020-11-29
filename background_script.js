@@ -1,10 +1,5 @@
 // Put all the javascript code here, that you want to execute in background.
 
-// debug popup
-// browser.tabs.create({ url: 'browserAction/popup.html' });
-// debug sidebar
-// browser.tabs.create({ url: 'sidebar/sidebar.html' });
-
 //idea set folder name in settings and only default is "FolgenFinder"
 let titleRootFolder = '';
 
