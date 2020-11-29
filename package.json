@@ -1,8 +1,16 @@
 {
+  "name": "folgenfinder",
+  "private": true,
   "scripts": {
-    "debug": "web-ext run -f=firefoxdeveloperedition --browser-console",
-    "lint": "web-ext lint",
-    "run": "web-ext run -f=firefoxdeveloperedition",
-    "build": "web-ext build -o"
+    "debug": "node scripts/copyDependencies.js && web-ext run -f=firefoxdeveloperedition --browser-console --source-dir src",
+    "lint": "web-ext lint --source-dir src",
+    "run": "node scripts/copyDependencies.js && web-ext run -f=firefoxdeveloperedition --source-dir src",
+    "build": "node scripts/copyDependencies.js && web-ext build -o --source-dir src"
+  },
+  "devDependencies": {
+    "web-ext": "^5.4.0"
+  },
+  "dependencies": {
+    "jquery": "^3.5.1"
   }
 }
