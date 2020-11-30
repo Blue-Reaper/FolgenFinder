@@ -2,8 +2,8 @@
   "name": "folgenfinder",
   "private": true,
   "scripts": {
-    "debug": "node scripts/copyDependencies.js && web-ext run -f=firefoxdeveloperedition --browser-console --source-dir src",
     "lint": "web-ext lint --source-dir src",
+    "dev": "node scripts/copyDependencies.js && web-ext run -f=firefoxdeveloperedition --browser-console --source-dir src",
     "run": "node scripts/copyDependencies.js && web-ext run -f=firefoxdeveloperedition --source-dir src",
     "build": "node scripts/copyDependencies.js && web-ext build -o --source-dir src"
   },
