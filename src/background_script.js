@@ -159,6 +159,12 @@ function getUrlNextEpisode(bookmark) {
       getNextUrlCountError += 1;
       return 'unknownHost';
       break;
+    case 'swatchseries':
+      countRegex = /(?<=^(.*?\/){4}(.*\_)*e)\d*(?=\.html)/;
+      // regex for season (?<=^(.*?\/){4}(.*\_)*s).\d*(?=\_e.*\.html)
+      getNextUrlCountError += 1;
+      return 'unknownHost';
+      break;
     default:
       // todo what do when website is not known?
       console.log('The website ' + host + ' is yet not known.');

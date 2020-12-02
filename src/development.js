@@ -8,7 +8,7 @@ browser.runtime.onInstalled.addListener(async ({ reason, temporary }) => {
     // browser.tabs.create({ url: 'browserAction/popup.html' });
 
     // show sidebar in tab
-    browser.tabs.create({ url: 'sidebar/sidebar.html' });
+    // browser.tabs.create({ url: 'sidebar/sidebar.html' });
 
     // set options
     browser.storage.sync.set({
