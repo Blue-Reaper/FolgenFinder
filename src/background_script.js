@@ -134,37 +134,39 @@ function getBookmarksFromRootFolder(rootId) {
 
 function getUrlNextEpisode(bookmark) {
   let countRegex;
-  // console.log('Domain: ' + /(?<=^(.*\/){2}).*?(?=\/)/.exec(bookmark.url)[0]);
-  // find episode-count for domain
-  // todo change regex for domain (no www. ww2. or .com .yiu)
-  let domain = /(?<=^(.*\/){2}).*?(?=\/)/.exec(bookmark.url)[0];
-  switch (domain) {
-    case 'reaperscans.com':
+  // (?<=^(.*:\/\/) -> http:// or https://
+  // (.+\.)*) -> www. or any sub-domain
+  // [^\.]* -> host (ensures not to get any sub-domains)
+  // (?=\..{1,3}\/) (top-level-domain and everything after it)
+  let host = /(?<=^(.*:\/\/)(.+\.)*)[^\.]*(?=\..{1,3}\/)/.exec(bookmark.url)[0];
+  // find episode-count for host
+  switch (host) {
+    case 'reaperscans':
     // regex with named group see: https://github.com/tc39/proposal-regexp-named-groups
     // let regex = /(?<=^(.*?\/){6})(?<count>\d+)/;
-    case 'edelgardescans.com':
-    case 'leviatanscans.com':
-    case 'skscans.com':
+    case 'edelgardescans':
+    case 'leviatanscans':
+    case 'skscans':
       // regex to find episode
       countRegex = /(?<=^(.*?\/){6})\d+/;
       break;
-    case 'lhtranslation.net':
+    case 'lhtranslation':
       // todo the next pages do exist but are empty
       countRegex = /(?<=^(.*?\/){3}(.*?-)*)\d*(?=\.html)/;
       getNextUrlCountError += 1;
       return 'unknownDomain';
       break;
-    case 'mangasushi.net':
+    case 'mangasushi':
       // todo one false "new episode"
       countRegex = /(?<=^(.*?\/){5}chapter-)\d*(?=\/.*)/;
       getNextUrlCountError += 1;
-      return 'unknownDomain';
+      return 'unknownHost';
       break;
     default:
       // todo what do when website is not known?
-      console.log('The website ' + domain + ' is yet not known.');
+      console.log('The website ' + host + ' is yet not known.');
       getNextUrlCountError += 1;
-      return 'unknownDomain';
+      return 'unknownHost';
       break;
   }
 
