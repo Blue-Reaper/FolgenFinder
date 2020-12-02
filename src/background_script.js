@@ -130,7 +130,9 @@ function getBookmarksFromRootFolder(rootId) {
 }
 
 function getUrlNextEpisode(bookmark) {
-  let countRegex;
+  // countRegex[0] == episode counter
+  // countRegex[2] == season counter
+  let countRegex = [];
   // (?<=^(.*:\/\/) -> http:// or https://
   // (.+\.)*) -> www. or any sub-domain
   // [^\.]* -> host (ensures not to get any sub-domains)
@@ -145,25 +147,27 @@ function getUrlNextEpisode(bookmark) {
     case 'leviatanscans':
     case 'skscans':
       // regex to find episode
-      countRegex = /(?<=^(.*?\/){6})\d+/;
+      countRegex.push(/(?<=^(.*?\/){6})\d+/);
       break;
     case 'lhtranslation':
       // todo the next pages do exist but are empty
-      countRegex = /(?<=^(.*?\/){3}(.*?-)*)\d*(?=\.html)/;
+      countRegex.push(/(?<=^(.*?\/){3}(.*?-)*)\d*(?=\.html)/);
       getNextUrlCountError += 1;
       return 'unknownDomain';
       break;
     case 'mangasushi':
       // todo one false "new episode"
-      countRegex = /(?<=^(.*?\/){5}chapter-)\d*(?=\/.*)/;
+      countRegex.push(/(?<=^(.*?\/){5}chapter-)\d*(?=\/.*)/);
       getNextUrlCountError += 1;
       return 'unknownHost';
       break;
+    // todo be able to register host changes to a certain extent
+    case 'watch-series':
     case 'swatchseries':
-      countRegex = /(?<=^(.*?\/){4}(.*\_)*e)\d*(?=\.html)/;
-      // regex for season (?<=^(.*?\/){4}(.*\_)*s).\d*(?=\_e.*\.html)
-      getNextUrlCountError += 1;
-      return 'unknownHost';
+      // counter episode
+      countRegex.push(/(?<=^(.*?\/){4}(.*\_)*e)\d*(?=\.html)/);
+      // counter
+      countRegex.push(/(?<=^(.*?\/){4}(.*\_)*s).\d*(?=\_e.*\.html)/);
       break;
     default:
       // todo what do when website is not known?
@@ -172,18 +176,26 @@ function getUrlNextEpisode(bookmark) {
       return 'unknownHost';
       break;
   }
-
-  // console.log('original URL:' + bookmark.url);
-  let count = countRegex.exec(bookmark.url)[0];
-  // console.log('Count: ' + count);
-
-  let newUrl = bookmark.url.replace(countRegex, parseInt(count) + 1);
-  // console.log('new url: ' + newUrl);
+  let newUrls = [];
+  // episode count
+  let episodeCount = countRegex[0].exec(bookmark.url)[0];
+  // episode +1
+  newUrls.push(bookmark.url.replace(countRegex[0], parseInt(episodeCount) + 1));
   getNextUrlCount += 1;
-  return newUrl;
+
+  // season Count
+  if (countRegex[1] != undefined) {
+    let seasonCount = countRegex[1].exec(bookmark.url)[0];
+    // set episode to 1
+    let seasonUrl = bookmark.url.replace(countRegex[0], 1);
+    // season +1
+    newUrls.push(seasonUrl.replace(countRegex[1], parseInt(seasonCount) + 1));
+  }
+
+  return newUrls;
 }
 
-async function checkNewEpisode(newUrl) {
+async function checkNewEpisode(newUrls) {
   // var xhr;
   // var _orgAjax = jQuery.ajaxSettings.xhr;
   // jQuery.ajaxSettings.xhr = function () {
@@ -209,35 +221,37 @@ async function checkNewEpisode(newUrl) {
   //   },
   // });
 
-  let xhr = new XMLHttpRequest();
-  xhr.open('HEAD', newUrl, true);
+  $.each(newUrls, (idx, newUrl) => {
+    let xhr = new XMLHttpRequest();
+    xhr.open('HEAD', newUrl, true);
 
-  xhr.onreadystatechange = function () {
-    if (this.readyState == 4 && this.status == 200) {
-      // console.log('new: ' + newUrl);
-      // console.log('response: ' + xhr.responseURL);
-      // some pages redirect if url doesn't exist
-      if (xhr.responseURL == newUrl) {
-        checkEpisodeCountNew += 1;
-        // console.log('+++++++++++++ page exits new:' + newUrl + ' resoponse: ' + xhr.responseURL);
-        browser.runtime.sendMessage({
-          newEpisode: newUrl,
-        });
-      } else {
+    xhr.onreadystatechange = function () {
+      if (this.readyState == 4 && this.status == 200) {
+        // console.log('new: ' + newUrl);
+        // console.log('response: ' + xhr.responseURL);
+        // some pages redirect if url doesn't exist
+        if (xhr.responseURL == newUrl) {
+          checkEpisodeCountNew += 1;
+          console.log('+++++++++++++ page exits new:' + newUrl + ' resoponse: ' + xhr.responseURL);
+          browser.runtime.sendMessage({
+            newEpisode: newUrl,
+          });
+        } else {
+          checkEpisodeCount += 1;
+          console.log(
+            '------------- page not exits new:' + newUrl + ' resoponse: ' + xhr.responseURL
+          );
+        }
+      } else if (this.readyState == 4 && (this.status == 404 || this.status == 503)) {
         checkEpisodeCount += 1;
-        // console.log(
-        //   '------------- page not exits new:' + newUrl + ' resoponse: ' + xhr.responseURL
-        // );
+        console.log('------------- page not exits new:' + newUrl + ' resoponse: ' + this.status);
       }
-    } else if (this.readyState == 4 && this.status == 404) {
-      checkEpisodeCount += 1;
-      // console.log('------------- page not exits new:' + newUrl + ' resoponse: 404');
-    }
-    browser.runtime.sendMessage({
-      checkEpisodeCountNew: checkEpisodeCountNew,
-      checkEpisodeCount: checkEpisodeCount,
-    });
-  };
+      browser.runtime.sendMessage({
+        checkEpisodeCountNew: checkEpisodeCountNew,
+        checkEpisodeCount: checkEpisodeCount,
+      });
+    };
 
-  xhr.send();
+    xhr.send();
+  });
 }
