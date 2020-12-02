@@ -1,6 +1,5 @@
 // Put all the javascript code here, that you want to execute in background.
 
-//idea set folder name in settings and only default is "FolgenFinder"
 let titleRootFolder = '';
 
 readOptions();
@@ -9,13 +8,15 @@ function readOptions() {
   let gettingActiveFolder = browser.storage.sync.get('activeFolder');
   gettingActiveFolder.then((res) => {
     titleRootFolder = res.activeFolder;
-    console.log('read options - folder: ' + res.activeFolder);
+    // console.log('read options - folder: ' + res.activeFolder);
   });
 }
 
 // Listen for messages from other scripts
 browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  // fixme background gets multible "reload=true" messages, but only 1 was sent
   if (request.reload != undefined && request.reload == 'start') {
+    readOptions();
     checkBookmarks();
   }
 });
@@ -87,10 +88,6 @@ function checkBookmarks() {
         getNextUrlCount: getNextUrlCount,
         getNextUrlCountError: getNextUrlCountError,
       });
-      console.log('bookmarks' + bookmarkCount);
-      console.log('loops' + loopCount);
-      console.log('nextUrls' + getNextUrlCount);
-      console.log('nextUrlsError' + getNextUrlCountError);
     });
 }
 
@@ -216,19 +213,19 @@ async function checkNewEpisode(newUrl) {
       // some pages redirect if url doesn't exist
       if (xhr.responseURL == newUrl) {
         checkEpisodeCountNew += 1;
-        console.log('+++++++++++++ page exits new:' + newUrl + ' resoponse: ' + xhr.responseURL);
+        // console.log('+++++++++++++ page exits new:' + newUrl + ' resoponse: ' + xhr.responseURL);
         browser.runtime.sendMessage({
           newEpisode: newUrl,
         });
       } else {
         checkEpisodeCount += 1;
-        console.log(
-          '------------- page not exits new:' + newUrl + ' resoponse: ' + xhr.responseURL
-        );
+        // console.log(
+        //   '------------- page not exits new:' + newUrl + ' resoponse: ' + xhr.responseURL
+        // );
       }
     } else if (this.readyState == 4 && this.status == 404) {
       checkEpisodeCount += 1;
-      console.log('------------- page not exits new:' + newUrl + ' resoponse: 404');
+      // console.log('------------- page not exits new:' + newUrl + ' resoponse: 404');
     }
     browser.runtime.sendMessage({
       checkEpisodeCountNew: checkEpisodeCountNew,

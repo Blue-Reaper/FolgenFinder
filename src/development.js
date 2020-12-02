@@ -11,5 +11,9 @@ browser.runtime.onInstalled.addListener(async ({ reason, temporary }) => {
     browser.tabs.create({ url: 'sidebar/sidebar.html' });
 
     // set options
+    browser.storage.sync.set({
+      folder: ['Am Lesen', 'Season End'],
+      activeFolder: 'Am Lesen',
+    });
   }
 });

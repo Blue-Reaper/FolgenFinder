@@ -59,22 +59,27 @@ function readOptions() {
   gettingItem.then((res) => {
     $('#folder1')
       .text(res.folder[0])
+      .off('click')
       .click(() => {
-        browser.storage.sync.set({
-          activeFolder: res.folder[0],
-        });
-        reload();
+        browser.storage.sync
+          .set({
+            activeFolder: res.folder[0],
+          })
+          .then(() => reload());
       });
     $('#folder2')
       .text(res.folder[1])
+      .off('click')
       .click(() => {
-        browser.storage.sync.set({
-          activeFolder: res.folder[1],
-        });
-        reload();
+        browser.storage.sync
+          .set({
+            activeFolder: res.folder[1],
+          })
+          .then(() => reload());
       });
     $('#folder3')
       .text(res.folder[2])
+      .off('click')
       .click(() => {
         browser.storage.sync.set({
           activeFolder: res.folder[2],
@@ -90,7 +95,6 @@ browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.reload != undefined && request.reload == 'end') {
     // reload finished (except async) if no messages recieved, no new episodes
     showNewEpisodes.removeClass('hidden');
-    console.log('read counts');
     $('#counts').append($('<div>bookmarks: ' + request.bookmarkCount + '</div>'));
     if (request.bookmarkCount != request.loopCount) {
       $('#counts').append($('<div>!!to little loops: ' + request.loopCount + '</div>'));
@@ -99,7 +103,7 @@ browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
       $(
         '<div>nextUrl: ' +
           request.getNextUrlCount +
-          ' unknown Domain: ' +
+          ' unknown Host: ' +
           request.getNextUrlCountError +
           ' = ' +
           (request.getNextUrlCount + request.getNextUrlCountError) +
