@@ -13,7 +13,8 @@
   text-decoration: none;
 }
 
-.box a:hover {
+.box a:hover,
+.button:hover {
   background-color: var(--sidebar-hover);
 }
 
@@ -32,11 +33,10 @@
 
 .button {
   cursor: pointer;
-  display: block;
-  height: 1em;
-  width: 2em;
   background-color: var(--sidebar-highlight);
+  color: var(--sidebar-text);
   float: left;
   margin: 8px;
   padding: 8px;
+  border-radius: 4px;
 }

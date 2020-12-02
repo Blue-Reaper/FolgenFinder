@@ -57,35 +57,18 @@ browser.storage.onChanged.addListener(readOptions);
 function readOptions() {
   let gettingItem = browser.storage.sync.get('folder');
   gettingItem.then((res) => {
-    $('#folder1')
-      .text(res.folder[0])
-      .off('click')
-      .click(() => {
+    $('#bookmarkFolder').empty();
+    $.each(res.folder, (idx, folder) => {
+      let button = $('<div class="button">' + folder + '</div>');
+      button.click(() => {
         browser.storage.sync
           .set({
-            activeFolder: res.folder[0],
+            activeFolder: folder,
           })
           .then(() => reload());
       });
-    $('#folder2')
-      .text(res.folder[1])
-      .off('click')
-      .click(() => {
-        browser.storage.sync
-          .set({
-            activeFolder: res.folder[1],
-          })
-          .then(() => reload());
-      });
-    $('#folder3')
-      .text(res.folder[2])
-      .off('click')
-      .click(() => {
-        browser.storage.sync.set({
-          activeFolder: res.folder[2],
-        });
-        reload();
-      });
+      $('#bookmarkFolder').append(button);
+    });
   });
 }
 
