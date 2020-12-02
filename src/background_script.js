@@ -130,8 +130,9 @@ function getBookmarksFromRootFolder(rootId) {
 }
 
 function getUrlNextEpisode(bookmark) {
+  let newUrls = [];
   // countRegex[0] == episode counter
-  // countRegex[2] == season counter
+  // countRegex[1] == season counter (optional)
   let countRegex = [];
   // (?<=^(.*:\/\/) -> http:// or https://
   // (.+\.)*) -> www. or any sub-domain
@@ -153,30 +154,28 @@ function getUrlNextEpisode(bookmark) {
       // todo the next pages do exist but are empty
       countRegex.push(/(?<=^(.*?\/){3}(.*?-)*)\d*(?=\.html)/);
       getNextUrlCountError += 1;
-      return 'unknownDomain';
+      return newUrls;
       break;
     case 'mangasushi':
       // todo one false "new episode"
       countRegex.push(/(?<=^(.*?\/){5}chapter-)\d*(?=\/.*)/);
       getNextUrlCountError += 1;
-      return 'unknownHost';
+      return newUrls;
       break;
-    // todo be able to register host changes to a certain extent
     case 'watch-series':
     case 'swatchseries':
       // counter episode
       countRegex.push(/(?<=^(.*?\/){4}(.*\_)*e)\d*(?=\.html)/);
-      // counter
+      // counter season
       countRegex.push(/(?<=^(.*?\/){4}(.*\_)*s).\d*(?=\_e.*\.html)/);
       break;
     default:
       // todo what do when website is not known?
-      console.log('The website ' + host + ' is yet not known.');
+      console.log('The website ' + host + ' is not yet known.');
       getNextUrlCountError += 1;
-      return 'unknownHost';
+      return newUrls;
       break;
   }
-  let newUrls = [];
   // episode count
   let episodeCount = countRegex[0].exec(bookmark.url)[0];
   // episode +1
@@ -227,10 +226,11 @@ async function checkNewEpisode(newUrls) {
 
     xhr.onreadystatechange = function () {
       if (this.readyState == 4 && this.status == 200) {
-        // console.log('new: ' + newUrl);
-        // console.log('response: ' + xhr.responseURL);
+        // console.log('new: ' + /(?<=^(.*?\/){3}).*/.exec(newUrl)[0]);
+        // console.log('response: ' + /(?<=^(.*?\/){3}).*/.exec(xhr.responseURL)[0]);
         // some pages redirect if url doesn't exist
-        if (xhr.responseURL == newUrl) {
+        // only check if parts after host match, in case the hosting-domain changed
+        if (/(?<=^(.*?\/){3}).*/.exec(xhr.responseURL)[0] == /(?<=^(.*?\/){3}).*/.exec(newUrl)[0]) {
           checkEpisodeCountNew += 1;
           console.log('+++++++++++++ page exits new:' + newUrl + ' resoponse: ' + xhr.responseURL);
           browser.runtime.sendMessage({
@@ -242,7 +242,8 @@ async function checkNewEpisode(newUrls) {
             '------------- page not exits new:' + newUrl + ' resoponse: ' + xhr.responseURL
           );
         }
-      } else if (this.readyState == 4 && (this.status == 404 || this.status == 503)) {
+        // if status = 4xx client-error or 5xx server-error
+      } else if (this.readyState == 4 && (/4\d\d/.test(this.status) || /5\d\d/.test(this.status))) {
         checkEpisodeCount += 1;
         console.log('------------- page not exits new:' + newUrl + ' resoponse: ' + this.status);
       }
