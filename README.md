@@ -1,11 +1,13 @@
 # Folgen Finder
 
 Firefox Add-on to check for new episodes of bookmarked shows.
+
 Only possible if the episode is shown in the url, so youtube doesn't work.
 
 ## Development
 
 You'll need [Node.js](https://nodejs.org) installed.
+
 Clone the source and install all dependencies:
 
 ```
