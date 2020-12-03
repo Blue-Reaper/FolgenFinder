@@ -78,6 +78,7 @@ browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.reload != undefined && request.reload == 'end') {
     // reload finished (except async) if no messages recieved, no new episodes
     showNewEpisodes.removeClass('hidden');
+    $('#counts').empty();
     $('#counts').append($('<div>bookmarks: ' + request.bookmarkCount + '</div>'));
     if (request.bookmarkCount != request.loopCount) {
       $('#counts').append($('<div>!!to little loops: ' + request.loopCount + '</div>'));

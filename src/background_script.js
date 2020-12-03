@@ -80,14 +80,16 @@ function checkBookmarks() {
       checkEpisodeCount = 0;
       $.each(bookmarkItems, (idx, bookmark) => {
         loopCount += 1;
-        checkNewEpisode(getUrlNextEpisode(bookmark));
-      });
-      browser.runtime.sendMessage({
-        reload: 'end',
-        bookmarkCount: bookmarkCount,
-        loopCount: loopCount,
-        getNextUrlCount: getNextUrlCount,
-        getNextUrlCountError: getNextUrlCountError,
+        getUrlNextEpisode(bookmark).then((newBookmark) => {
+          checkNewEpisode(newBookmark);
+          browser.runtime.sendMessage({
+            reload: 'end',
+            bookmarkCount: bookmarkCount,
+            loopCount: loopCount,
+            getNextUrlCount: getNextUrlCount,
+            getNextUrlCountError: getNextUrlCountError,
+          });
+        });
       });
     });
 }
@@ -131,83 +133,66 @@ function getBookmarksFromRootFolder(rootId) {
 }
 
 function getUrlNextEpisode(bookmark) {
-  let newBookmark = {
-    title: bookmark.title,
-    url: [],
-    // (?<=^(.*:\/\/) -> http:// or https://
-    // (.+\.)*) -> www. or any sub-domain
-    // [^\.]* -> host (ensures not to get any sub-domains)
-    // (?=\..{1,3}\/) (top-level-domain and everything after it)
-    host: /(?<=^(.*:\/\/)(.+\.)*)[^\.]*(?=\..{1,3}\/)/.exec(bookmark.url)[0],
-    currentEpisode: '',
-    currentSeason: '',
-    nextEpisode: [0, 0],
-    nextSeason: [0, 0],
-    // content needs to be checked if site shows empty page for not existing episodes
-    checkContent: false,
-  };
-  // countRegex[0] == episode counter
-  // countRegex[1] == season counter (optional)
-  let countRegex = [];
-  // find count for host
-  switch (newBookmark.host) {
-    case 'reaperscans':
-    // regex with named group see: https://github.com/tc39/proposal-regexp-named-groups
-    // let regex = /(?<=^(.*?\/){6})(?<count>\d+)/;
-    case 'edelgardescans':
-    case 'leviatanscans':
-    case 'skscans':
-      // regex to find episode
-      countRegex.push(/(?<=^(.*?\/){6})\d+/);
-      // season counter
-      countRegex.push(/(?<=^(.*?\/){5})\d+(?=\/.*)/);
-      break;
-    case 'lhtranslation':
-      countRegex.push(/(?<=^(.*?\/){3}(.*?-)*)\d*(?=\.html)/);
-      newBookmark.checkContent = true;
-      break;
-    case 'mangasushi':
-      countRegex.push(/(?<=^(.*?\/){5}chapter-)\d*(?=\/.*)/);
-      break;
-    case 'watch-series':
-    case 'swatchseries':
-      // counter episode
-      countRegex.push(/(?<=^(.*?\/){4}(.*\_)*e)\d*(?=\.html)/);
-      // counter season
-      countRegex.push(/(?<=^(.*?\/){4}(.*\_)*s).\d*(?=\_e.*\.html)/);
-      break;
-    // todo why the flase positive?
-    case 'yesmovies':
-      // counter episode
-      countRegex.push(/(?<=^(.*?\/){5})\d*(?=-.*)/);
-      // counter season
-      countRegex.push(/(?<=^(.*?\/){4}.*season-)\d*(?=-.*)/);
-      break;
-    default:
+  return Promise.resolve()
+    .then(() => {
+      return Promise.resolve().then(() => browser.storage.sync.get('hostConfigs'));
+    })
+    .then((res) => {
+      let newBookmark = {
+        title: bookmark.title,
+        url: [],
+        // (?<=^(.*:\/\/) -> http:// or https://
+        // (.+\.)*) -> www. or any sub-domain
+        // [^\.]* -> host (ensures not to get any sub-domains)
+        // (?=\..{1,3}\/) (top-level-domain and everything after it)
+        host: /(?<=^(.*:\/\/)(.+\.)*)[^\.]*(?=\..{1,3}\/)/.exec(bookmark.url)[0],
+        currentEpisode: '',
+        currentSeason: '',
+        nextEpisode: [0, 0],
+        nextSeason: [0, 0],
+        checkContent: false,
+      };
+      let hostConfigs = res.hostConfigs;
+      // let hostConfig = {
+      //   host: '',
+      //   regexNextEpisode: '',
+      //   regexNextSeason: '',
+      //   // content needs to be checked if site shows empty page for not existing episodes
+      //   checkContent: false,
+      // };
+      let hostConfig = hostConfigs.filter((hostConfig) => {
+        return hostConfig.host == newBookmark.host;
+      })[0];
+
       // todo what do when website is not known?
-      console.log('The website ' + newBookmark.host + ' is not yet known.');
-      getNextUrlCountError += 1;
-      return newBookmark;
-      break;
-  }
-  // episode count
-  newBookmark.currentEpisode = countRegex[0].exec(bookmark.url)[0];
-  newBookmark.nextEpisode[0] = parseInt(newBookmark.currentEpisode) + 1;
-  newBookmark.url[0] = bookmark.url.replace(countRegex[0], newBookmark.nextEpisode[0]);
-  getNextUrlCount += 1;
+      if (hostConfig == undefined) {
+        console.log('The website ' + newBookmark.host + ' is not yet known.');
+        getNextUrlCountError += 1;
+        return Promise.resolve(newBookmark);
+      }
 
-  // season Count
-  if (countRegex[1] != undefined) {
-    // set next season[0] = current season if only episode goes up
-    newBookmark.currentSeason = newBookmark.nextSeason[0] = countRegex[1].exec(bookmark.url)[0];
-    newBookmark.nextSeason[1] = parseInt(newBookmark.currentSeason) + 1;
-    // set episode to 1
-    newBookmark.nextEpisode[1] = 1;
-    let seasonUrl = bookmark.url.replace(countRegex[0], newBookmark.nextEpisode[1]);
-    newBookmark.url[1] = seasonUrl.replace(countRegex[1], newBookmark.nextSeason[1]);
-  }
+      newBookmark.checkContent = hostConfig.checkContent;
 
-  return newBookmark;
+      // episode count
+      let regEpisode = new RegExp(hostConfig.regexNextEpisode);
+      newBookmark.currentEpisode = regEpisode.exec(bookmark.url)[0];
+      newBookmark.nextEpisode[0] = parseInt(newBookmark.currentEpisode) + 1;
+      newBookmark.url[0] = bookmark.url.replace(regEpisode, newBookmark.nextEpisode[0]);
+      getNextUrlCount += 1;
+
+      // season Count
+      if (hostConfig.regexNextSeason != undefined) {
+        let regSeason = new RegExp(hostConfig.regexNextSeason);
+        // set next season[0] = current season if only episode goes up
+        newBookmark.currentSeason = newBookmark.nextSeason[0] = regSeason.exec(bookmark.url)[0];
+        newBookmark.nextSeason[1] = parseInt(newBookmark.currentSeason) + 1;
+        // set episode to 1
+        newBookmark.nextEpisode[1] = 1;
+        let seasonUrl = bookmark.url.replace(regEpisode, newBookmark.nextEpisode[1]);
+        newBookmark.url[1] = seasonUrl.replace(regSeason, newBookmark.nextSeason[1]);
+      }
+      return Promise.resolve(newBookmark);
+    });
 }
 
 async function checkNewEpisode(newBookmark) {
