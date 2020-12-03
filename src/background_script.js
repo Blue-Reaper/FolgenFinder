@@ -14,7 +14,6 @@ function readOptions() {
 
 // Listen for messages from other scripts
 browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  // fixme background gets multible "reload=true" messages, but only 1 was sent
   if (request.reload != undefined && request.reload == 'start') {
     readOptions();
     checkBookmarks();
@@ -149,18 +148,14 @@ function getUrlNextEpisode(bookmark) {
     case 'skscans':
       // regex to find episode
       countRegex.push(/(?<=^(.*?\/){6})\d+/);
+      // season counter
+      countRegex.push(/(?<=^(.*?\/){5})\d+(?=\/.*)/);
       break;
     case 'lhtranslation':
-      // todo the next pages do exist but are empty
       countRegex.push(/(?<=^(.*?\/){3}(.*?-)*)\d*(?=\.html)/);
-      getNextUrlCountError += 1;
-      return newUrls;
       break;
     case 'mangasushi':
-      // todo one false "new episode"
       countRegex.push(/(?<=^(.*?\/){5}chapter-)\d*(?=\/.*)/);
-      getNextUrlCountError += 1;
-      return newUrls;
       break;
     case 'watch-series':
     case 'swatchseries':
@@ -168,6 +163,12 @@ function getUrlNextEpisode(bookmark) {
       countRegex.push(/(?<=^(.*?\/){4}(.*\_)*e)\d*(?=\.html)/);
       // counter season
       countRegex.push(/(?<=^(.*?\/){4}(.*\_)*s).\d*(?=\_e.*\.html)/);
+      break;
+    case 'yesmovies':
+      // counter episode
+      countRegex.push(/(?<=^(.*?\/){5})\d*(?=-.*)/);
+      // counter season
+      countRegex.push(/(?<=^(.*?\/){4}.*season-)\d*(?=-.*)/);
       break;
     default:
       // todo what do when website is not known?
@@ -195,57 +196,42 @@ function getUrlNextEpisode(bookmark) {
 }
 
 async function checkNewEpisode(newUrls) {
-  // var xhr;
-  // var _orgAjax = jQuery.ajaxSettings.xhr;
-  // jQuery.ajaxSettings.xhr = function () {
-  //   xhr = _orgAjax();
-  //   return xhr;
-  // };
-  // $.ajax({
-  //   method: 'HEAD',
-  //   url: newUrl,
-  //   success: function () {
-  //     console.log('newUrl: ' + this.url);
-  //     console.log('response location: ' + xhr.responseURL);
-  //     // some pages redirect if url doesn't exist
-  //     if (xhr.responseURL == this.url) {
-  //       console.log('page exits ' + this.url);
-  //       listNewEpisodes.push(this.url);
-  //     } else {
-  //       console.log('page not exits ' + this.url);
-  //     }
-  //   },
-  //   error: function () {
-  //     console.log('page not exits ' + this.url);
-  //   },
-  // });
-
   $.each(newUrls, (idx, newUrl) => {
     let xhr = new XMLHttpRequest();
-    xhr.open('HEAD', newUrl, true);
+    // xhr.open('HEAD', newUrl, true);
+    // todo only use get method for the sides wich need extra check, is content is empty or not (lhtranslation)
+    xhr.open('GET', newUrl, true);
 
     xhr.onreadystatechange = function () {
       if (this.readyState == 4 && this.status == 200) {
-        // console.log('new: ' + /(?<=^(.*?\/){3}).*/.exec(newUrl)[0]);
-        // console.log('response: ' + /(?<=^(.*?\/){3}).*/.exec(xhr.responseURL)[0]);
         // some pages redirect if url doesn't exist
         // only check if parts after host match, in case the hosting-domain changed
-        if (/(?<=^(.*?\/){3}).*/.exec(xhr.responseURL)[0] == /(?<=^(.*?\/){3}).*/.exec(newUrl)[0]) {
-          checkEpisodeCountNew += 1;
-          console.log('+++++++++++++ page exits new:' + newUrl + ' resoponse: ' + xhr.responseURL);
-          browser.runtime.sendMessage({
-            newEpisode: newUrl,
-          });
+        if (
+          /(?<=^(.*?\/){3}).*/.exec(this.responseURL)[0] == /(?<=^(.*?\/){3}).*/.exec(newUrl)[0]
+        ) {
+          // some pages are blank so a content check is needed
+          if ($(this.response).children().length > 1) {
+            checkEpisodeCountNew += 1;
+            // console.log(
+            //   '+++++++++++++ page exits new:' + newUrl + ' resoponse: ' + this.responseURL
+            // );
+            browser.runtime.sendMessage({
+              newEpisode: newUrl,
+            });
+          } else {
+            checkEpisodeCount += 1;
+            // console.log('------------- page not exits new:' + newUrl + ' resoponse: page is empty');
+          }
         } else {
           checkEpisodeCount += 1;
-          console.log(
-            '------------- page not exits new:' + newUrl + ' resoponse: ' + xhr.responseURL
-          );
+          // console.log(
+          //   '------------- page not exits new:' + newUrl + ' resoponse: ' + this.responseURL
+          // );
         }
         // if status = 4xx client-error or 5xx server-error
       } else if (this.readyState == 4 && (/4\d\d/.test(this.status) || /5\d\d/.test(this.status))) {
         checkEpisodeCount += 1;
-        console.log('------------- page not exits new:' + newUrl + ' resoponse: ' + this.status);
+        // console.log('------------- page not exits new:' + newUrl + ' resoponse: ' + this.status);
       }
       browser.runtime.sendMessage({
         checkEpisodeCountNew: checkEpisodeCountNew,

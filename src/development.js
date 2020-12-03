@@ -12,7 +12,7 @@ browser.runtime.onInstalled.addListener(async ({ reason, temporary }) => {
 
     // set options
     browser.storage.sync.set({
-      folder: ['Am Lesen', 'Season End', 'Am Schauen'],
+      folder: ['Am Lesen', 'Season End', 'Am Schauen', 'Hold'],
       activeFolder: 'Am Lesen',
     });
   }
