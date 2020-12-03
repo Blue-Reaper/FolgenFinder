@@ -17,7 +17,7 @@ npm install
 lint and build the extension:
 
 ```
-npm all
+npm run all
 ```
 
 other commands:
