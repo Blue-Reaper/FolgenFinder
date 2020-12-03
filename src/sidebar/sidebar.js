@@ -97,11 +97,19 @@ browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
     showNewEpisodes.append(
       $(
         '<a href="' +
-          request.newEpisode +
+          request.newEpisode.url +
           '"><div class="title">' +
-          request.newEpisode.split('/')[2] +
-          '</div><div>' +
-          request.newEpisode +
+          request.newEpisode.title +
+          '</div><div class="episode">S ' +
+          request.newEpisode.currentSeason +
+          ' E ' +
+          request.newEpisode.currentEpisode +
+          '</div><div class="host">' +
+          request.newEpisode.host +
+          '</div><div class="next">New S ' +
+          request.newEpisode.nextSeason +
+          ' E ' +
+          request.newEpisode.nextEpisode +
           '</div> </div>'
       )
     );
@@ -110,14 +118,17 @@ browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
     $('#checked').empty();
     $('#checked').append(
       $(
-        '<div>New Episodes: ' +
-          request.checkEpisodeCountNew +
-          ' old: ' +
+        '<div>checked: ' +
           request.checkEpisodeCount +
-          ' = ' +
-          (request.checkEpisodeCountNew + request.checkEpisodeCount) +
+          ' New Episodes: ' +
+          request.checkEpisodeCountNew +
           '</div>'
       )
     );
+    if (request.checkEpisodeCountError != 0) {
+      $('#checked').append(
+        $('<div>!!error while checking: ' + request.checkEpisodeCountError + '</div>')
+      );
+    }
   }
 });

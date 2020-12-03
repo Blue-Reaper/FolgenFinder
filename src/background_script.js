@@ -59,6 +59,7 @@ let loopCount = 0;
 let getNextUrlCount = 0;
 let getNextUrlCountError = 0;
 let checkEpisodeCountNew = 0;
+let checkEpisodeCountError = 0;
 let checkEpisodeCount = 0;
 
 function checkBookmarks() {
@@ -75,6 +76,7 @@ function checkBookmarks() {
       getNextUrlCount = 0;
       getNextUrlCountError = 0;
       checkEpisodeCountNew = 0;
+      checkEpisodeCountError = 0;
       checkEpisodeCount = 0;
       $.each(bookmarkItems, (idx, bookmark) => {
         loopCount += 1;
@@ -129,17 +131,26 @@ function getBookmarksFromRootFolder(rootId) {
 }
 
 function getUrlNextEpisode(bookmark) {
-  let newUrls = [];
+  let newBookmark = {
+    title: bookmark.title,
+    url: [],
+    // (?<=^(.*:\/\/) -> http:// or https://
+    // (.+\.)*) -> www. or any sub-domain
+    // [^\.]* -> host (ensures not to get any sub-domains)
+    // (?=\..{1,3}\/) (top-level-domain and everything after it)
+    host: /(?<=^(.*:\/\/)(.+\.)*)[^\.]*(?=\..{1,3}\/)/.exec(bookmark.url)[0],
+    currentEpisode: '',
+    currentSeason: '',
+    nextEpisode: [0, 0],
+    nextSeason: [0, 0],
+    // content needs to be checked if site shows empty page for not existing episodes
+    checkContent: false,
+  };
   // countRegex[0] == episode counter
   // countRegex[1] == season counter (optional)
   let countRegex = [];
-  // (?<=^(.*:\/\/) -> http:// or https://
-  // (.+\.)*) -> www. or any sub-domain
-  // [^\.]* -> host (ensures not to get any sub-domains)
-  // (?=\..{1,3}\/) (top-level-domain and everything after it)
-  let host = /(?<=^(.*:\/\/)(.+\.)*)[^\.]*(?=\..{1,3}\/)/.exec(bookmark.url)[0];
-  // find episode-count for host
-  switch (host) {
+  // find count for host
+  switch (newBookmark.host) {
     case 'reaperscans':
     // regex with named group see: https://github.com/tc39/proposal-regexp-named-groups
     // let regex = /(?<=^(.*?\/){6})(?<count>\d+)/;
@@ -153,6 +164,7 @@ function getUrlNextEpisode(bookmark) {
       break;
     case 'lhtranslation':
       countRegex.push(/(?<=^(.*?\/){3}(.*?-)*)\d*(?=\.html)/);
+      newBookmark.checkContent = true;
       break;
     case 'mangasushi':
       countRegex.push(/(?<=^(.*?\/){5}chapter-)\d*(?=\/.*)/);
@@ -164,6 +176,7 @@ function getUrlNextEpisode(bookmark) {
       // counter season
       countRegex.push(/(?<=^(.*?\/){4}(.*\_)*s).\d*(?=\_e.*\.html)/);
       break;
+    // todo why the flase positive?
     case 'yesmovies':
       // counter episode
       countRegex.push(/(?<=^(.*?\/){5})\d*(?=-.*)/);
@@ -172,69 +185,87 @@ function getUrlNextEpisode(bookmark) {
       break;
     default:
       // todo what do when website is not known?
-      console.log('The website ' + host + ' is not yet known.');
+      console.log('The website ' + newBookmark.host + ' is not yet known.');
       getNextUrlCountError += 1;
-      return newUrls;
+      return newBookmark;
       break;
   }
   // episode count
-  let episodeCount = countRegex[0].exec(bookmark.url)[0];
-  // episode +1
-  newUrls.push(bookmark.url.replace(countRegex[0], parseInt(episodeCount) + 1));
+  newBookmark.currentEpisode = countRegex[0].exec(bookmark.url)[0];
+  newBookmark.nextEpisode[0] = parseInt(newBookmark.currentEpisode) + 1;
+  newBookmark.url[0] = bookmark.url.replace(countRegex[0], newBookmark.nextEpisode[0]);
   getNextUrlCount += 1;
 
   // season Count
   if (countRegex[1] != undefined) {
-    let seasonCount = countRegex[1].exec(bookmark.url)[0];
+    // set next season[0] = current season if only episode goes up
+    newBookmark.currentSeason = newBookmark.nextSeason[0] = countRegex[1].exec(bookmark.url)[0];
+    newBookmark.nextSeason[1] = parseInt(newBookmark.currentSeason) + 1;
     // set episode to 1
-    let seasonUrl = bookmark.url.replace(countRegex[0], 1);
-    // season +1
-    newUrls.push(seasonUrl.replace(countRegex[1], parseInt(seasonCount) + 1));
+    newBookmark.nextEpisode[1] = 1;
+    let seasonUrl = bookmark.url.replace(countRegex[0], newBookmark.nextEpisode[1]);
+    newBookmark.url[1] = seasonUrl.replace(countRegex[1], newBookmark.nextSeason[1]);
   }
 
-  return newUrls;
+  return newBookmark;
 }
 
-async function checkNewEpisode(newUrls) {
-  $.each(newUrls, (idx, newUrl) => {
+async function checkNewEpisode(newBookmark) {
+  $.each(newBookmark.url, (idx, newUrl) => {
     let xhr = new XMLHttpRequest();
-    // xhr.open('HEAD', newUrl, true);
-    // todo only use get method for the sides wich need extra check, is content is empty or not (lhtranslation)
-    xhr.open('GET', newUrl, true);
+    if (Boolean(newBookmark.checkContent)) {
+      xhr.open('GET', newUrl, true);
+    } else {
+      xhr.open('HEAD', newUrl, true);
+    }
 
     xhr.onreadystatechange = function () {
+      let checkedEpisode = false;
       if (this.readyState == 4 && this.status == 200) {
         // some pages redirect if url doesn't exist
         // only check if parts after host match, in case the hosting-domain changed
         if (
           /(?<=^(.*?\/){3}).*/.exec(this.responseURL)[0] == /(?<=^(.*?\/){3}).*/.exec(newUrl)[0]
         ) {
-          // some pages are blank so a content check is needed
-          if ($(this.response).children().length > 1) {
+          if (!newBookmark.checkContent || $(this.response).children().length > 1) {
             checkEpisodeCountNew += 1;
-            // console.log(
-            //   '+++++++++++++ page exits new:' + newUrl + ' resoponse: ' + this.responseURL
-            // );
+            // set bookmark to the existing episode
+            newBookmark.url = newBookmark.url[idx];
+            newBookmark.nextEpisode = newBookmark.nextEpisode[idx];
+            newBookmark.nextSeason = newBookmark.nextSeason[idx];
+            console.log(
+              '+++++++++++++ page exits new:' + newUrl + ' resoponse: ' + this.responseURL
+            );
             browser.runtime.sendMessage({
-              newEpisode: newUrl,
+              newEpisode: newBookmark,
             });
+            checkedEpisode = true;
           } else {
-            checkEpisodeCount += 1;
-            // console.log('------------- page not exits new:' + newUrl + ' resoponse: page is empty');
+            checkedEpisode = true;
+            console.log('------------- page not exits new:' + newUrl + ' resoponse: page is empty');
           }
         } else {
-          checkEpisodeCount += 1;
-          // console.log(
-          //   '------------- page not exits new:' + newUrl + ' resoponse: ' + this.responseURL
-          // );
+          checkedEpisode = true;
+          console.log(
+            '------------- page not exits new:' + newUrl + ' resoponse: ' + this.responseURL
+          );
         }
         // if status = 4xx client-error or 5xx server-error
       } else if (this.readyState == 4 && (/4\d\d/.test(this.status) || /5\d\d/.test(this.status))) {
+        checkedEpisode = true;
+        console.log('------------- page not exits new:' + newUrl + ' resoponse: ' + this.status);
+      }
+      if (this.readyState == 4 && !Boolean(checkedEpisode)) {
+        console.error('url not checked: ' + newUrl);
+        checkEpisodeCountError += 1;
+      }
+      // only count every bookmark and not both urls
+      if (this.readyState == 4 && idx == 0) {
         checkEpisodeCount += 1;
-        // console.log('------------- page not exits new:' + newUrl + ' resoponse: ' + this.status);
       }
       browser.runtime.sendMessage({
         checkEpisodeCountNew: checkEpisodeCountNew,
+        checkEpisodeCountError: checkEpisodeCountError,
         checkEpisodeCount: checkEpisodeCount,
       });
     };

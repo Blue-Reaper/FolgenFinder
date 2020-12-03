@@ -12,13 +12,14 @@
   display: block;
   text-decoration: none;
 }
-
+/* todo .button:active, .button.active */
 .box a:hover,
 .button:hover {
   background-color: var(--sidebar-hover);
 }
-
-.title {
+/* todo make pretty */
+.title,
+.next {
   font-weight: bold;
 }
 
