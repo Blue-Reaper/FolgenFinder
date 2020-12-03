@@ -4,8 +4,9 @@
   "scripts": {
     "lint": "web-ext lint --source-dir src",
     "dev": "node scripts/copyDependencies.js && web-ext run -f=firefoxdeveloperedition --browser-console --source-dir src",
-    "run": "node scripts/copyDependencies.js && web-ext run -f=firefoxdeveloperedition --source-dir src",
-    "build": "node scripts/copyDependencies.js && web-ext build -o --source-dir src"
+    "run": "node scripts/copyDependencies.js && web-ext run -f=firefox --source-dir src",
+    "build": "node scripts/copyDependencies.js && web-ext build -o --source-dir src",
+    "all": "node scripts/copyDependencies.js && web-ext lint --source-dir src &&  web-ext build -o --source-dir src"
   },
   "devDependencies": {
     "web-ext": "^5.4.0"
